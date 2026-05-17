@@ -1,55 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>JFCM Attendance System</title>
+
+  <!-- React -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <!-- Excel export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Firebase v9 compat (works as global firebase.*) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0f1f0f; font-family: Georgia, serif; color: #deeede; }
-    input, select, button { font-family: Georgia, serif; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #0a150a; }
-    ::-webkit-scrollbar-thumb { background: #5a9a5a; border-radius: 3px; }
-    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) hue-rotate(80deg); }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
-    .fade-in { animation: fadeIn 0.25s ease; }
-    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(90,180,90,0.5);}50%{box-shadow:0 0 0 10px rgba(90,180,90,0);} }
-    .pulse { animation: pulse 2.5s infinite; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#0f1f0f;font-family:Georgia,serif;color:#deeede;}
+    input,select,button{font-family:Georgia,serif;}
+    ::-webkit-scrollbar{width:6px;}
+    ::-webkit-scrollbar-track{background:#0a150a;}
+    ::-webkit-scrollbar-thumb{background:#5a9a5a;border-radius:3px;}
+    input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7) sepia(1) hue-rotate(80deg);}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+    .fade-in{animation:fadeIn 0.25s ease;}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(90,180,90,0.5);}50%{box-shadow:0 0 0 10px rgba(90,180,90,0);}}
+    .pulse{animation:pulse 2.5s infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .spin{animation:spin 0.8s linear infinite;display:inline-block;}
   </style>
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect } = React;
 
-const STORAGE_KEY = "jfcm_v3";
+<script>
+// ── Firebase init ────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyCGFFgjAVprVRgSnUYkBclL3sMfE7t2vWw",
+  authDomain: "jfcm-ptbo-attendance.firebaseapp.com",
+  projectId: "jfcm-ptbo-attendance",
+  storageBucket: "jfcm-ptbo-attendance.firebasestorage.app",
+  messagingSenderId: "688875506086",
+  appId: "1:688875506086:web:7b5537614223b39f71a767",
+  measurementId: "G-SBJG1TT1RV"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
 const SERVICES = [
-  "Sunday Service",
-  "Friday Bible Study",
+  "Sunday Morning Service",
+  "Sunday Evening Service",
+  "Wednesday Bible Study",
+  "Friday Prayer Meeting",
   "Special Service / Event"
 ];
 const ROLES = ["Pastor","Elder","Deacon","Member","Youth"];
 
 const LOGO = "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";
 
-const initMembers = [];
-
 const fmtDate = d => new Date(d).toLocaleDateString("en-US",{weekday:"short",year:"numeric",month:"short",day:"numeric"});
 const todayStr = () => new Date().toISOString().split("T")[0];
 
-// ── Export ────────────────────────────────────────────────────────────────────
+// ── Export helpers ────────────────────────────────────────────────────────────
 function doCSV(records, members) {
   const rows = [["Date","Service","Member Name","Role","Status","Visitor Names"]];
   records.forEach(r => {
     const vStr = (r.visitors||[]).map(v=>v.name).join("; ");
     members.forEach(m => {
       rows.push([r.date, r.service, m.name, m.role,
-        r.presentIds.includes(m.id)?"Present":"Absent", vStr]);
+        (r.presentIds||[]).includes(m.id)?"Present":"Absent", vStr]);
     });
   });
   const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
@@ -60,23 +84,20 @@ function doCSV(records, members) {
 
 function doXLSX(records, members) {
   const wb = XLSX.utils.book_new();
-  // Sheet 1 – full detail
   const d1 = [["Date","Service","Member Name","Role","Status","Visitor Count","Visitor Names"]];
   records.forEach(r => {
     const vStr = (r.visitors||[]).map(v=>v.name).join(", ");
     members.forEach(m => d1.push([r.date,r.service,m.name,m.role,
-      r.presentIds.includes(m.id)?"Present":"Absent",(r.visitors||[]).length,vStr]));
+      (r.presentIds||[]).includes(m.id)?"Present":"Absent",(r.visitors||[]).length,vStr]));
   });
   const ws1 = XLSX.utils.aoa_to_sheet(d1);
   ws1["!cols"]=[{wch:12},{wch:30},{wch:22},{wch:10},{wch:10},{wch:14},{wch:40}];
   XLSX.utils.book_append_sheet(wb,ws1,"Attendance Detail");
-  // Sheet 2 – summary
   const d2=[["Date","Service","Members Present","Visitors","Total"]];
-  records.forEach(r=>d2.push([r.date,r.service,r.presentIds.length,(r.visitors||[]).length,r.total]));
+  records.forEach(r=>d2.push([r.date,r.service,(r.presentIds||[]).length,(r.visitors||[]).length,r.total]));
   const ws2=XLSX.utils.aoa_to_sheet(d2);
   ws2["!cols"]=[{wch:12},{wch:30},{wch:18},{wch:10},{wch:8}];
   XLSX.utils.book_append_sheet(wb,ws2,"Summary");
-  // Sheet 3 – members
   const d3=[["Name","Role"]];
   members.forEach(m=>d3.push([m.name,m.role]));
   const ws3=XLSX.utils.aoa_to_sheet(d3);
@@ -85,65 +106,99 @@ function doXLSX(records, members) {
   XLSX.writeFile(wb,"jfcm_attendance.xlsx");
 }
 
-// ── Colors ────────────────────────────────────────────────────────────────────
+// ── Theme ─────────────────────────────────────────────────────────────────────
 const G = {
   dark:"#0a160a", mid:"#132013", card:"rgba(18,38,18,0.85)",
   border:"rgba(80,150,80,0.3)", accent:"#5cb85c", accentLt:"#7dd87d",
-  gold:"#c8a84b", text:"#d8eed8", muted:"#6a8a6a", white:"#edf6ed",
+  gold:"#c8a84b", text:"#d8eed8", muted:"#6a8a6a",
 };
 
+// ── App ───────────────────────────────────────────────────────────────────────
 function App() {
-  const [members,    setMembers]    = useState(initMembers);
-  const [records,    setRecords]    = useState([]);
-  const [view,       setView]       = useState("take");
-  const [date,       setDate]       = useState(todayStr());
-  const [service,    setService]    = useState(SERVICES[0]);
-  const [att,        setAtt]        = useState({});
-  const [newM,       setNewM]       = useState({name:"",role:"Member"});
-  const [search,     setSearch]     = useState("");
-  const [saved,      setSaved]      = useState(false);
-  const [visitors,   setVisitors]   = useState([{name:""}]);
-  const [expOpen,    setExpOpen]    = useState(false);
+  const [members,  setMembers]  = useState([]);
+  const [records,  setRecords]  = useState([]);
+  const [view,     setView]     = useState("take");
+  const [date,     setDate]     = useState(todayStr());
+  const [service,  setService]  = useState(SERVICES[0]);
+  const [att,      setAtt]      = useState({});
+  const [newM,     setNewM]     = useState({name:"",role:"Member"});
+  const [search,   setSearch]   = useState("");
+  const [saving,   setSaving]   = useState(false);
+  const [saved,    setSaved]    = useState(false);
+  const [visitors, setVisitors] = useState([{name:""}]);
+  const [expOpen,  setExpOpen]  = useState(false);
+  const [loading,  setLoading]  = useState(true);
+  const [dbError,  setDbError]  = useState(null);
 
-  useEffect(()=>{
-    try{
-      const raw=localStorage.getItem(STORAGE_KEY);
-      if(raw){const{members:m,records:r}=JSON.parse(raw);if(m)setMembers(m);if(r)setRecords(r);}
-    }catch{}
-  },[]);
+  // ── Real-time listeners ──────────────────────────────────────────────────
+  useEffect(() => {
+    const unsubMembers = db.collection("members")
+      .orderBy("createdAt","asc")
+      .onSnapshot(snap => {
+        setMembers(snap.docs.map(d=>({...d.data(), id:d.id})));
+        setLoading(false);
+      }, err => { setDbError(err.message); setLoading(false); });
 
-  const persist=(m,r)=>{try{localStorage.setItem(STORAGE_KEY,JSON.stringify({members:m,records:r}));}catch{}};
+    const unsubRecords = db.collection("attendance")
+      .orderBy("createdAt","desc")
+      .onSnapshot(snap => {
+        setRecords(snap.docs.map(d=>({...d.data(), firestoreId:d.id})));
+      }, err => setDbError(err.message));
 
-  const toggle=id=>{setAtt(p=>({...p,[id]:!p[id]}));setSaved(false);};
+    return () => { unsubMembers(); unsubRecords(); };
+  }, []);
 
-  const filtered=members.filter(m=>m.name.toLowerCase().includes(search.toLowerCase()));
+  const toggle = id => { setAtt(p=>({...p,[id]:!p[id]})); setSaved(false); };
 
-  const saveAtt=()=>{
-    const pIds=Object.entries(att).filter(([,v])=>v).map(([k])=>Number(k));
-    const vList=visitors.filter(v=>v.name.trim());
-    const rec={id:Date.now(),date,service,presentIds:pIds,visitors:vList,total:pIds.length+vList.length};
-    const nr=[rec,...records]; setRecords(nr); persist(members,nr);
-    setSaved(true); setVisitors([{name:""}]); setAtt({});
+  const filtered = members.filter(m=>m.name.toLowerCase().includes(search.toLowerCase()));
+
+  // ── Save attendance to Firestore ──────────────────────────────────────────
+  const saveAtt = async () => {
+    setSaving(true);
+    const pIds = Object.entries(att).filter(([,v])=>v).map(([k])=>k); // string ids
+    const vList = visitors.filter(v=>v.name.trim());
+    try {
+      await db.collection("attendance").add({
+        date, service,
+        presentIds: pIds,
+        visitors: vList,
+        total: pIds.length + vList.length,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      setSaved(true);
+      setVisitors([{name:""}]);
+      setAtt({});
+    } catch(e) { alert("Error saving: " + e.message); }
+    setSaving(false);
   };
 
-  const addMember=()=>{
-    if(!newM.name.trim())return;
-    const u=[...members,{id:Date.now(),name:newM.name.trim(),role:newM.role}];
-    setMembers(u);persist(u,records);setNewM({name:"",role:"Member"});
+  // ── Add member to Firestore ───────────────────────────────────────────────
+  const addMember = async () => {
+    if (!newM.name.trim()) return;
+    try {
+      await db.collection("members").add({
+        name: newM.name.trim(),
+        role: newM.role,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      setNewM({name:"",role:"Member"});
+    } catch(e) { alert("Error adding member: " + e.message); }
   };
 
-  const delMember=id=>{
-    if(!confirm("Remove this member?"))return;
-    const u=members.filter(m=>m.id!==id);setMembers(u);persist(u,records);
+  // ── Delete member ─────────────────────────────────────────────────────────
+  const delMember = async (id) => {
+    if (!confirm("Remove this member from the system?")) return;
+    try { await db.collection("members").doc(id).delete(); }
+    catch(e) { alert("Error removing: " + e.message); }
   };
 
-  const pCount=Object.values(att).filter(Boolean).length;
-  const vCount=visitors.filter(v=>v.name.trim()).length;
-  const totalSvc=records.length;
-  const avgAtt=totalSvc?Math.round(records.reduce((s,r)=>s+r.total,0)/totalSvc):0;
-  const best=totalSvc?records.reduce((a,b)=>a.total>b.total?a:b):null;
+  const pCount = Object.values(att).filter(Boolean).length;
+  const vCount = visitors.filter(v=>v.name.trim()).length;
+  const totalSvc = records.length;
+  const avgAtt = totalSvc ? Math.round(records.reduce((s,r)=>s+r.total,0)/totalSvc) : 0;
+  const best = totalSvc ? records.reduce((a,b)=>a.total>b.total?a:b) : null;
 
-  // ── inline styles ──
+  // ── Inline styles ─────────────────────────────────────────────────────────
   const card={background:G.card,border:`1px solid ${G.border}`,borderRadius:12,padding:20,marginBottom:16,backdropFilter:"blur(6px)"};
   const secT={fontSize:12,letterSpacing:3,color:G.accent,textTransform:"uppercase",marginBottom:14,paddingBottom:8,borderBottom:`1px solid rgba(80,150,80,0.2)`};
   const inp={padding:"10px 14px",background:"rgba(255,255,255,0.05)",border:`1px solid rgba(80,150,80,0.3)`,borderRadius:8,color:G.text,fontSize:13,outline:"none",width:"100%"};
@@ -160,18 +215,33 @@ function App() {
     const[bg,col]=m[role]||m.Member;
     return{fontSize:10,letterSpacing:1,padding:"2px 8px",borderRadius:10,background:bg,color:col,border:"1px solid currentColor"};
   };
-  const pBtn={padding:"10px 22px",borderRadius:8,border:"none",
-    background:"linear-gradient(135deg,#3a7a3a,#5cb85c)",color:"#061006",cursor:"pointer",fontSize:13,fontWeight:"bold",letterSpacing:1};
-  const gBtn={padding:"10px 20px",borderRadius:8,border:`1px solid rgba(200,168,75,0.5)`,
-    background:"rgba(200,168,75,0.1)",color:G.gold,cursor:"pointer",fontSize:13,letterSpacing:0.5};
-  const sBtn={padding:"10px 16px",borderRadius:8,border:`1px solid rgba(80,150,80,0.2)`,
-    background:"rgba(255,255,255,0.04)",color:G.text,cursor:"pointer",fontSize:13};
-  const dBtn={padding:"5px 11px",borderRadius:6,border:"1px solid rgba(200,60,60,0.3)",
-    background:"rgba(200,60,60,0.1)",color:"#f08080",cursor:"pointer",fontSize:11};
-  const navBtn=a=>({padding:"8px 16px",borderRadius:6,
-    border:a?`1px solid ${G.accent}`:`1px solid rgba(80,150,80,0.2)`,
-    background:a?"rgba(92,184,92,0.14)":"transparent",
-    color:a?G.accentLt:G.muted,cursor:"pointer",fontSize:13,letterSpacing:0.8,transition:"all 0.18s"});
+  const pBtn={padding:"10px 22px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#3a7a3a,#5cb85c)",color:"#061006",cursor:"pointer",fontSize:13,fontWeight:"bold",letterSpacing:1};
+  const gBtn={padding:"10px 20px",borderRadius:8,border:`1px solid rgba(200,168,75,0.5)`,background:"rgba(200,168,75,0.1)",color:G.gold,cursor:"pointer",fontSize:13};
+  const sBtn={padding:"10px 16px",borderRadius:8,border:`1px solid rgba(80,150,80,0.2)`,background:"rgba(255,255,255,0.04)",color:G.text,cursor:"pointer",fontSize:13};
+  const dBtn={padding:"5px 11px",borderRadius:6,border:"1px solid rgba(200,60,60,0.3)",background:"rgba(200,60,60,0.1)",color:"#f08080",cursor:"pointer",fontSize:11};
+  const navBtn=a=>({padding:"8px 16px",borderRadius:6,border:a?`1px solid ${G.accent}`:`1px solid rgba(80,150,80,0.2)`,
+    background:a?"rgba(92,184,92,0.14)":"transparent",color:a?G.accentLt:G.muted,cursor:"pointer",fontSize:13,letterSpacing:0.8});
+
+  // ── DB error banner ───────────────────────────────────────────────────────
+  if (dbError) return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",padding:24,textAlign:"center"}}>
+      <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
+      <div style={{color:"#f08080",fontSize:16,marginBottom:8}}>Firebase connection error</div>
+      <div style={{color:G.muted,fontSize:13,maxWidth:400}}>{dbError}</div>
+      <div style={{color:G.muted,fontSize:12,marginTop:16}}>Check that Firestore rules allow read/write and your internet connection is active.</div>
+    </div>
+  );
+
+  // ── Loading screen ────────────────────────────────────────────────────────
+  if (loading) return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",gap:16}}>
+      <div style={{width:56,height:56,borderRadius:"50%",border:`2px solid ${G.accent}`,overflow:"hidden",boxShadow:`0 0 20px rgba(92,184,92,0.4)`}}>
+        <img src={`data:image/jpeg;base64,${LOGO}`} style={{width:"100%",height:"100%",objectFit:"cover"}} />
+      </div>
+      <div style={{color:G.accentLt,fontSize:16,letterSpacing:2}}>JFCM</div>
+      <div style={{color:G.muted,fontSize:12,letterSpacing:1}}>Connecting to database… <span className="spin">⟳</span></div>
+    </div>
+  );
 
   return (
     <div style={{minHeight:"100vh",background:`linear-gradient(155deg,${G.dark} 0%,${G.mid} 55%,#0a1a0a 100%)`}}
@@ -180,18 +250,21 @@ function App() {
       {/* ── HEADER ── */}
       <div style={{background:"rgba(0,0,0,0.4)",borderBottom:`1px solid ${G.border}`,padding:"0 20px",display:"flex",alignItems:"center",gap:14,height:72}}>
         <div style={{width:54,height:54,borderRadius:"50%",border:`2px solid ${G.accent}`,overflow:"hidden",flexShrink:0,boxShadow:`0 0 16px rgba(92,184,92,0.4)`}}>
-          <img src={`data:image/jpeg;base64,${LOGO}`} alt="JFCM" style={{width:"100%",height:"100%",objectFit:"cover"}} />
+          <img src={`data:image/jpeg;base64,${LOGO}`} alt="JFCM Logo" style={{width:"100%",height:"100%",objectFit:"cover"}} />
         </div>
         <div style={{flex:1}}>
           <div style={{fontSize:18,fontWeight:"bold",color:G.accentLt,letterSpacing:1}}>Jesus First Christian Ministry</div>
-          <div style={{fontSize:11,color:G.muted,letterSpacing:2.5,marginTop:2}}>PETERBOROUGH · ATTENDANCE SYSTEM</div>
+          <div style={{fontSize:11,color:G.muted,letterSpacing:2.5,marginTop:2}}>
+            PETERBOROUGH · ATTENDANCE SYSTEM
+            <span style={{marginLeft:10,color:"#5cb85c",fontSize:10}}>● Firebase Live</span>
+          </div>
         </div>
         {/* Export dropdown */}
         <div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
           <button style={gBtn} onClick={()=>setExpOpen(p=>!p)}>⬇ Export ▾</button>
           {expOpen&&(
             <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:"#0c1c0c",
-              border:`1px solid ${G.border}`,borderRadius:8,overflow:"hidden",minWidth:180,zIndex:300,
+              border:`1px solid ${G.border}`,borderRadius:8,overflow:"hidden",minWidth:190,zIndex:300,
               boxShadow:"0 10px 30px rgba(0,0,0,0.6)"}}>
               <button onClick={()=>{doCSV(records,members);setExpOpen(false);}}
                 style={{display:"block",width:"100%",padding:"12px 18px",background:"transparent",
@@ -262,8 +335,10 @@ function App() {
           </div>
 
           <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-            <button style={pBtn} onClick={saveAtt}>Save Attendance Record</button>
-            {saved&&<span style={{color:G.accentLt,fontSize:13,letterSpacing:1}}>✓ Saved!</span>}
+            <button style={{...pBtn,opacity:saving?0.6:1}} onClick={saveAtt} disabled={saving}>
+              {saving ? <span>Saving… <span className="spin">⟳</span></span> : "Save Attendance Record"}
+            </button>
+            {saved&&!saving&&<span style={{color:G.accentLt,fontSize:13,letterSpacing:1}}>✓ Saved to Firebase!</span>}
           </div>
 
           <div className="pulse" style={{position:"fixed",bottom:24,right:24,background:"linear-gradient(135deg,#3a7a3a,#5cb85c)",
@@ -281,10 +356,10 @@ function App() {
             <div style={secT}>Attendance Records ({records.length} services)</div>
             {records.length===0&&<p style={{color:G.muted,textAlign:"center",padding:40}}>No records yet — start taking attendance.</p>}
             {records.map(r=>{
-              const pm=members.filter(m=>r.presentIds.includes(m.id));
-              const ab=members.filter(m=>!r.presentIds.includes(m.id));
+              const pm=members.filter(m=>(r.presentIds||[]).includes(m.id));
+              const ab=members.filter(m=>!(r.presentIds||[]).includes(m.id));
               return(
-                <div key={r.id} style={{...card,marginBottom:10,padding:"14px 18px"}}>
+                <div key={r.firestoreId} style={{...card,marginBottom:10,padding:"14px 18px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
                     <div>
                       <div style={{fontSize:15,color:G.accentLt,fontWeight:"bold"}}>{r.service}</div>
@@ -296,7 +371,7 @@ function App() {
                     </div>
                   </div>
                   <div style={{marginTop:10,fontSize:12,color:G.muted}}>
-                    <span style={{color:G.accentLt}}>Present ({r.presentIds.length}):</span>{" "}
+                    <span style={{color:G.accentLt}}>Present ({(r.presentIds||[]).length}):</span>{" "}
                     {pm.map(m=>m.name).join(", ")||"None"}
                   </div>
                   {ab.length>0&&<div style={{marginTop:5,fontSize:12,color:G.muted}}>
@@ -361,7 +436,7 @@ function App() {
           {best&&<div style={card}>
             <div style={secT}>Best Attended Service</div>
             <div style={{color:G.accentLt,fontSize:18,marginBottom:4}}>{best.service}</div>
-            <div style={{color:G.muted,fontSize:13}}>{fmtDate(best.date)} &middot; {best.total} in attendance</div>
+            <div style={{color:G.muted,fontSize:13}}>{fmtDate(best.date)} · {best.total} in attendance</div>
           </div>}
 
           <div style={card}>
@@ -377,8 +452,7 @@ function App() {
                     <span style={{fontSize:11,color:G.muted}}>{f.length} services · avg {avg}</span>
                   </div>
                   <div style={{height:7,background:"rgba(255,255,255,0.05)",borderRadius:4,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${mx?(avg/mx)*100:0}%`,
-                      background:"linear-gradient(90deg,#3a7a3a,#5cb85c)",borderRadius:4,transition:"width 0.6s"}} />
+                    <div style={{height:"100%",width:`${mx?(avg/mx)*100:0}%`,background:"linear-gradient(90deg,#3a7a3a,#5cb85c)",borderRadius:4,transition:"width 0.6s"}} />
                   </div>
                 </div>
               );
@@ -388,7 +462,7 @@ function App() {
 
           {totalSvc>0&&<div style={card}>
             <div style={secT}>Export Records</div>
-            <p style={{color:G.muted,fontSize:13,marginBottom:14}}>Download all records for your church files or reporting.</p>
+            <p style={{color:G.muted,fontSize:13,marginBottom:14}}>Download all attendance records for your church files or reporting.</p>
             <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
               <button style={gBtn} onClick={()=>doCSV(records,members)}>📄 Download CSV</button>
               <button style={gBtn} onClick={()=>doXLSX(records,members)}>📊 Download Excel (.xlsx)</button>
