@@ -8,6 +8,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #0f1f0f; font-family: Georgia, serif; color: #deeede; }
@@ -25,7 +28,20 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
+  const firebaseConfig = {
+  apiKey: "AIzaSyCGFFgjAVprVRgSnUYkBclL3sMfE7t2vWw",
+  authDomain: "jfcm-ptbo-attendance.firebaseapp.com",
+  projectId: "jfcm-ptbo-attendance",
+  storageBucket: "jfcm-ptbo-attendance.firebasestorage.app",
+  messagingSenderId: "688875506086",
+  appId: "1:688875506086:web:7b5537614223b39f71a767"
+};
+  const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+  
 const { useState, useEffect } = React;
+  firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 const STORAGE_KEY = "jfcm_v3";
 const SERVICES = [
@@ -403,53 +419,6 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-// 🔴 PUT YOUR FIREBASE CONFIG HERE
-const firebaseConfig = {
-  apiKey: "AIzaSyCGFFgjAVprVRgSnUYkBclL3sMfE7t2vWw",
-  authDomain: "jfcm-ptbo-attendance.firebaseapp.com",
-  projectId: "jfcm-ptbo-attendance",
-  storageBucket: "jfcm-ptbo-attendance.firebasestorage.app",
-  messagingSenderId: "688875506086",
-  appId: "1:688875506086:web:7b5537614223b39f71a767",
-  measurementId: "G-SBJG1TT1RV"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// Add member function (you will connect this to your button)
-window.addMember = async function () {
-  const name = document.getElementById("name").value;
-
-  if (!name) return;
-
-  await addDoc(collection(db, "members"), {
-    name: name
-  });
-
-  document.getElementById("name").value = "";
-};
-
-// Live update list
-onSnapshot(collection(db, "members"), (snapshot) => {
-  const list = document.getElementById("list");
-  if (!list) return;
-
-  list.innerHTML = "";
-
-  snapshot.forEach((doc) => {
-    const li = document.createElement("li");
-    li.textContent = doc.data().name;
-    list.appendChild(li);
-  });
-});
-</script>
-
   
 </body>
 </html>
