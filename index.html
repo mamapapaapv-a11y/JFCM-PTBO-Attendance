@@ -1,407 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>JFCM Attendance System</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0f1f0f; font-family: Georgia, serif; color: #deeede; }
-    input, select, button { font-family: Georgia, serif; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #0a150a; }
-    ::-webkit-scrollbar-thumb { background: #5a9a5a; border-radius: 3px; }
-    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) hue-rotate(80deg); }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
-    .fade-in { animation: fadeIn 0.25s ease; }
-    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(90,180,90,0.5);}50%{box-shadow:0 0 0 10px rgba(90,180,90,0);} }
-    .pulse { animation: pulse 2.5s infinite; }
-  </style>
+  <title>Member List</title>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect } = React;
 
-const STORAGE_KEY = "jfcm_v3";
-const SERVICES = [
-  "Sunday Service",
-  "Friday Bible Study",
-  "Special Service / Event"
-];
-const ROLES = ["Pastor","Elder","Deacon","Member","Youth"];
+<h2>Add Member</h2>
 
-const LOGO = "/9j/4AAQSkZJRgABAQAAAQABAAD/7QCEUGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAGgcAigAYkZCTUQwYTAwMGFmMDAxMDAwMDFmMDQwMDAwNzYwNjAwMDA1MDA3MDAwMGY5MDcwMDAwNWIwYjAwMDAxZDEwMDAwMGFhMTAwMDAwYzUxMTAwMDA3NzEyMDAwMGM4MTcwMDAwAP/bAIQABQYGCwgLCwsLCw0LCwsNDg4NDQ4ODw0ODg4NDxAQEBEREBAQEA8TEhMPEBETFBQTERMWFhYTFhUVFhkWGRYWEgEFBQUKBwoICQkICwgKCAsKCgkJCgoMCQoJCgkMDQsKCwsKCw0MCwsICwsMDAwNDQwMDQoLCg0MDQ0MExQTExOc/8IAEQgAyADHAwEiAAIRAQMRAf/EALsAAQEAAgMBAQAAAAAAAAAAAAAGBAcCAwUBCAEBAQEBAQEAAAAAAAAAAAAAAAIDAQQFEAACAgEEAgMAAAcAAAAAAAACAwEEAAUREyAQMBIUIhUhIzE0RFARAAEDAAYHBQUHBAMAAAAAAAEAAhEDEBIgITEiMkFRYXGRMKGx0fATQoHB4QRAUmJygvEjM5LCQ1BjEgEAAQMCBAcBAAMBAAAAAAABEQAhMUFRIGFxgRAwkaGxwfDRQOHxUP/aAAwDAQACEQMRAAABlh4/ngAAAAAAAAAAKmWqSWAAAdtv2oqqypOqsPkC4vfsCL/zZL1Dz+u+6CIcuM5gAKmWqSWAA9X7UVffB4zgOQfR8duS7ghxnYJ3ZELh7DvTXTNwozBxUy1SSwHd033a79dZGO6HIelg7drT0cn03p9XR8yDunpLefjY+fUqhnssXLic2Rrj0KS9YoRkqZapJYGTYdcrWmIJzFh2qe36O/1ewO0ABPaV/RerscIJz4Y+ZsDX/tVfj8aaZmVTLVLksC+gb2CrR28Nl85j3PoPT6gqwAAAJbTf6N13lhrUYea+gb2CrRUy1TOcsC9gr2CrTYGztGXeutwjqXTXMHadeFqCM94IH3u9oGkdrc57AvRh5jnNKTm29SebyXsFewQqZapnOWBfQNrK1piCc2w9eO1+jeP56ydd90RsF2zFDUe/pqq9fPiWeX6C56O83TXY8P5zPL0fOezzlNAU8x3qplqmYlgZNhDX1aQLv6JgHDnQOzjY1BenZpX9HeTrrodtSWxxlHf0TAONgR9NekXxIzVMtUksB3dJ3Ymu/Xpr0ghGXPvxTuUxRlMUZTFGRjg5fNh972a5zMHvQmFTLVJLAAev5B3YsFxt70gl1JTGEOSAPSd83Nsem79CGw+HOBMAKmWqSWAAABkVcY7V8gXavfsCL/zpE529RMg4AAqZapJZUiWVIllSJZUiWVIllSJZUiWVIllSJZUiWVIllSJapD//2gAIAQEAAQUC/wC0AScr0lhZ9KsvPlSHOalm9Is+ghmN0poYQyPvEJKV6cCoPU4CG2DZ2VaYrB1EG47Td4mNvZWqk+TeulDGkyfSl5pmCVfhyCSXpq1peVq1CI7QEzh1zCOkTtiHDcFySSXcAk5sMimvpWVysTSBUsrCZCEDjFwcajUFE9InbP5X1f276eEJBjJYXmBks02rxD0t1BsROjq2uUprz5rvlJ6mmOyl8haoz49dIVsHe/WlwEPxnzQnnVMbddJXubmch+dNqA6QCAj0ajRL5zEx5ot426mr4O6V/wCnU8CMlKtGxFcUj6r9KHxMbedU/YdHfmnkRvmk1yH3awsdvDf1S6W/8XNGX+u3yj0MSDM1CtCDz/R6O/VPKdr65fxleFq6tkuFo+LD4SDmcwaXbI8sHyJqWJAqz+Trq/x4sb+aXSv/AFKnTR3RGb5ExOWKoPx9EYDSt4dqHMyZWGA/4NSvjGWjGXNRlZ/ZZu2ybYzU/wAL6aSzY3L4z6SZTgWDDJYU4pxryvImNh8tLwq0xWTO/Skrkbqbfm7opnGWqL39NQZ+v6NPjgVM79qBw5bAkC8xEzi9NceBo2K0xQeGVFMlmjhOM0tw4SyDpXTLj1N0dwOQmyuLi/MFMZynnKecp5ynnKecp5ynhMIvMRvkRFBUzv6KtmUFbqQ6PahA0xe4nF6a1okSyuu5DFkufSlBNmAVQh7ycXrA5CQ1AHQzS/lDEGvsqsxuDpoKxupQMTO/vBhBi9WZGfbqsz4Uizgp58aQ592uvG6q0sIpKf8Atf/aAAgBAxEBPwH7gGytEcfBW/yhW+A6KQdnRWNxnxvtbtOXinOnlurivW5+N1olOdPyqY2SoqdRGcERFR0hO0Z3Mm/q8BUBKaIEXKVm2phgoiK37OSa2SmsAvUrNtVJnzArfs5BUbwAg4HbU98IOkSmvtV0ggp+zkK3ZNPwqa6DK9vwRpAdiOiI3q0vbcEXkrNPOJrZjI35c6wJQoin0cxwRoyNlbMMenO6dLHbt865UqamtlOdPIXQYWDuB7kWkXLEZ4cNqc6eA7AOI2q3wHRW/wAoXtDy5fc//9oACAECEQE/AfuAbKwHFWuAVvgOikbuis7sb4G0oumuK9bn43WiU4zUxsqKnUe5ERUcRO0Z3MhzqAlARcpG7amnFERW7ZyTWyg0C9SN21Prf8gmOEIGpzoQdOKa6a3iCn7OVZyHSpphe14IvB2I6I5q0va8EXSs0/Otu6sBCjKcyY4IsNbcMel06WO3bfAlON7A8D3Iti5ZjNF3TsAYVvgFa4BWz9z/AP/aAAgBAQAGPwL/ALqGgk8FpQzvK06aeRHykrIu/wAl/bPT6ra3/L6r+nTdYPkVhD+WfRQRB49vAElW/tDo/L6+Ss0DA0bz5ea0nE+HS9ovPLMKzTsHMep6K3QOtt3LHtIb8TsCsUQtUm13rwUuMnspaY8CoOhTePmrLh9eysjLady9jQ4RrO9beN/AE/BWi0gHbe9lS6/uu9bfFFrs/HsA0ZlCiZru1j67rrWGcdylv4QOm1Md7zDgfkjAicTzUHEIWZ0p9b73/szv/nx7B32h37fXE4IuOZuYYq0Zl4xG66JwjIrN3OVvadsXA4fHiE2mbq0mfP63mtHvGEyhbkwfxdLvxHuHYQMxlxUHMXH0B2Yt9cDec85MHj9E534jclx1fd81ZaIA7EvY2QcTzWIith4wfij+bS8++7Su2ukf61gDEnJab/g3zKst7O17zRhxuUNJvHiJu0Y3kfM1l5yOWGPPtmuwDu8j6V0fAjxIu0Hw8DU905CI538+w0mgqG6pGFX7v97tHwI+YqmJBzC1Xd3msJJ3RCtNyrLjsQeddkNJ3g5FFjsYGCpbM4Whu1VmdKBM5fJO4HcW+N3HORHz7qmcT8ybtK3a2T/tdLMccRuqkYrS6jNPbQy50tLhOzFfAyrDGwz3nZTPyVmjLXOGtawtfpPD4JhpJtnXMiBOyMsonFBoMgbSotCRxTgzHRjkd4Vq26eaAe6YqoaPcPARdcw5PHh9E5v4TdzPVaLiAMYR0jjnjmtFxCFLABe0WjyRJM7uVei4+Kk4k3GDjJ5BH8uj53WuHumUymbk8fx3di0bbJ+fY0lOeTfXEqd9532d37fXAotOYuYYrVs/qwWk/oFMWv1Y1S5gJ3rRcW94WADuS0gRzEXA0be4JtCzVZnzvhwzCFKzXbrD13XMDC1ndStd3UrXd1K13dStd3UrXd1K1ndSsXE8zNyf+Z/d/HYyMto3r21DiDrN9d47b2tLr+631t8EXO/jspGW0b1bojZftb68VDhB7KGiVLtOm2Dd5c1ad/HaS0wVZ+0N/d6xHwVqheHDd9VpNIvaLCeOzqrVO8DgPU9FYoG2Bv8Ap5qTie3lpLTwWkA/u9dFp0Mch5LWLf8ALyX909fosy7/ACX9OhnnH1KwhnLNSSSeP/d//9oACAEBAgE/If8A2uTChNX5FzfYLe9bjbA9qH+1vylf9tXZ+nps12XsUXIhzR6n0tISg0EPo+eWc2Au0BCdj7SXXl6q5YLPp9mvQ/mPQg9uLDA3PsMlHyxtTHbDuoYwm8ns69GGkSBEsjZPMg5AZcH92KeAxNeHm/SxrTN7av1oHTypx1qfIa1AEIs8m2zk3NKaQnR0G47eVh4L6Y/roVy7gZnUH3aMHLgCah2qbsmYTE7xQWGUItfHTvwohGEuJZGsPD1F3PkaPYyrNdBonJ8giZWA50jdqdUnL1cbC/CbADbiUs/pqJllIkyqe7emyQBDbdy+Kt6lsEStWkxyRJvDN+VYp0rohyDZu7nCiEYRkTIlDBYOz/x7KIpEhLJsnGNuBD7W52FNPKy/tjBwMQFXsXbXav5CKRGznMZvwijU5DnnNQAC6wM9oiiF3EtQ7PPg0lsNzJ+1qVcgWbiR7Pc4kyoPVr2L0eCIpziB2L9+GbQ0nXBfvNvIZrrCUOTMTsuKRAhETZOActHQn896RI2RhOZnhLmg8/8AQ0rOo9tPaOBFJUNuTdbTod6P6BBpr5Mo2O3TVBm+abhFskPv47GPZW/MNWLgg729h4dsqHsPvxNuXA3a1YuR+PSok2yrdXm+XCCjYERqB+r60iRISyOR8ez57HyHh/WkvgpgL0JogYYzoaHQyc/OiNkwmq17vnxvH/NxhabQj3k+3GkwgdpJvb58jbZQklJzDkoCCBZM8njF7/5HwFW1Ikidu41Z1elAEwkRkTzbWoE0rtcyeOkIsaq2PenzM2aL1hGnV2S9YLI+2b0UwISbso5Wiozs2lv0Fld15xVn5ReQ3JOTZ5ocKgs770fLwsO37/EOHnlD2H3wqOy2UYiecs+1ICWwZo0QDhGSjrbmLQMxO3WlSGtCwIRYNaEGEtjbGe9SDgCRBsSuGsVBkm2QPnONkpzNToMUBFYKLgkuolglklTrSyjuIgTqTSVQ5ULeYmbMX2rfradnx7VFI4yE93Xw7rHsfJeEuSDz/wBjSs6h209o4co9ousbZxRYLkA2npipQ5bcyzNKyyxMaxid6mDY/DRmk/BWGhK0HTxekVohsjoyWp2pIlW6rwbGnuH+FQUwQdS/ufbhTKg6o07lqPMEF5xK72dvJNEZWutnzUJZslk2fIHUJ1I/0nakSrqVebniZXRX729TpQqw8P7ZycDsBToEvoVebXN8M+1Y++fc/wApckRuh6QHh6aAPqRWerZ/1PvU6g89/RimIV5ny4OqMdjL+1oGEJ6FjsZ5vG7MPI0AdqByxk6mdxwMyi3FH2r9V91+i+6/Rfdfovuv0X3X6L7r9V90eBZgQHq+KIAlbAZVpgoRsZ/41btIlWVZXdfIz+Vtt/TRrcuAzOqG/wDQ80FQCVsBrWc66g/l3RSlXcGg0Dl5Wfqz4/h2aWGytaXmaPJZ1pS8tH9c5nlSfrXY6uCphDFj4bOa7pS5ZdDQbB5gxhYTNFCuxMc4PU9FDMnqSfRb1CvWfS3rj34sJHJHqQURDN6J75dlRNcnft9pNO1FLq3Xz3ebCj/tW0rnd7WpqB7h8sfatN3w+V4d/G0r4Ct+twPdossTkn1P0Vz8kpff/wBv/9oADAMBAgISAxIAABAEEEEEU0EEEEEEEEE8kKIM4kEEEEFXoEU4FAIgEEFPoFK3+8MFAEEFcFR3zzxolQMEWo63zzzzxhWoFUpTXyPVPzs6oEGIEdoMxCVCAEEGcgENfUIAEGEEFCIGDLKKA8gEEEEJQMEEBUAEEEEEEEGa5MAEEEEEEEEEEEEEEEEH/9oACAEDEgE/EP8AAfHBlbB3qMkvlb+q5A7T4dro819Uyv0uB24wjAPVbFdEMDHjLbwGLlq57aXTq50kWdOCfGDK7BmukCw5eEdsZqOIqKYrIpFDZPD8ATfg9Rfjv4OwNahtnBNZ36eEBOGz0amJs+OnsPeoo9WsCd+IcbJnn4YHceOdCKLDerAB8BtyxMcqGBs26UfI7eCTm9S8denB13eO2PCK2VD/AKrMZ661r0zm1rV6fiogRTWOhtV2arapuRb08bHVdD++K4C9KXy6tQYOy9b86X8bC9Lcy/nDosMN+Twmpb1Lepb+HQhl2KxDkf3hRSWSvxXfys4d8nr4guCa1H0Lr+VhFjT+8/IxEPj0rnan4lcz2P8AD//aAAgBAhIBPxD/AAGw9dK/Wx44JqGeX29OPpnz04JLbwGPAJHBK+enipPLWobVFJNEUPEg/PY8J0FRA4JrPCIbNnvUhNuDSQrGHF/Vz8MuoeOig2yhcI+HVuYoBDnbpQ8vgnhnwPHN8EuajT7DWD4HJR6ZdaV3jfO/HXxRwTSuXhgWk9L+Nh226njBNTU1Ph0wZdql6cIxc8GJkd9PEJxet7HLWu15BcGvwPDdjp/h/wD/2gAIAQECAT8Q/wDa5+yr7xjqxRX7usPvV0Z59gHvVhdXHgEv8rf7BRqtx72VTn4OIaC/Mxheg+fad2OT9q4Na0ENz+arKHSaX1PmRypeTN/oKEW4G9RkW/BztFB/6VD5a9Ky5pddOOmPkeCUGiNx8zEY9Yt91o3eRevoOFRZTT7xqROMGw9AA8ruFKDbH8jRrAArodogncL+t3uMN/KLYZCn7eDWeQ1hqkh88vhgRQCuwTm3zWlKYmIcb9OdT61S+1hYYlxNdS/wG7VWxDhQM8QgMIlxKwjM24R+HFCIFhGT+ZjDc8iHXu+XwGV0L1ig78hycD/RwFBYQREM2CS6xViUFll2t5vRYdKhC0Auc7l9t1zWcsdgtUgyu9SF0nxEhukEmHWkQCwOv96sQEzwumOQhCRHRGmEG2fxjv8A9nCIUWUQibjZ4+oyUTL/AIBNSAnfrgORHIOCY8ihYBJBsCtIJBpAJU4zMtWLcKneQMmASxEOzekgC5ANpR9io828NyGlLCdDgv1zj8rS5yDWvNDD+xv2cWCCDtK/qOyvkivC7vC3eKxXiW7Lfc8heQ97IvIhNoHomaSc0+UQj0eBlblXQpPZelQTltgkDsnDnCfRPft6msww/JNvaLgktUHo9x5i2ijETCdAVUTOq+THRUbJPmZsDeadGuVFOLAfG6MfsXT0FSER1g+4O/C9VEdfueOJIBcp+u6ZpEJK8yOn2eloswkoS2sBPLQLHlqDUkW6V82UIogZ6BAMiZE8JS5kx1096gJmR6Xwnrbv4tvBeHYWEUGWCbGrR2NjP8GkqMHVtPmjkE2p6wYM+rx5hJ+fR4ff+CDlaGZ5tsfnjtaUZBBQtM3sN23jPCIEOgYO8G41NUMlyLdeZ4f6OF0Ln8+p4FnU/BlDc+ApVh1xgvvyXov3BdMy4BgzriS9XBfiRRYQdRs+1vFpr2TYk62S2rBwY1jOV3qVi219M1rFw7ma3XH3+1Eta/WmBWSdJqVJmnOXVwbRGQyAcE1ELnrXgHMreEy1bhHT6nDur2CwSIX3a0RRkgBU2AMq6FXWJDIckkah9nhF23B0DwqtwjOgG0RpLNDTDNdmbgfN+bn7L9AJPsBV2JFK/AfUCoLM5ALjC2to0oLWQ2MykgjerZ1Tm6Mhbghel/b0puyNP+2aXJPtEkiQBUWlq+mdOulc6RPDizhPqnt39DWYbq4b+83DZDMK/W9DFY94Ud+tOo2dqSYL1K0gwzSvOQWnkHRdtzqOogdUy7ULmUIdI4DDwilEsvttiIzZERTfkN2ArvwW4n3kfVO5UxJ/YBmOFjwgcy/qO6vm2/C8kWuUUyHN6wU2o3AIQsiaJ5Ah3UNjpLu80ZJXdeLPC1oE+pa8zU+az5mpyLmzwCsenN0BaC7hJ+dS3fCvJ/eulz2Q3+p8HD7mC/VU96mX9JppQoP8p3pNcoXMew4Lecv2uxjdBT+AwbIe/wD0OOK1PPG+44TUYr81z1X2T4NJb2Sc3Q+RenTp06deuh7RjkIHigZQBNgANVcVaLF7B7/S0gZ5F1Eq81v5A7H5VvrzdrC1q1pPwSfwX8x0CACVOAC6u1diC5Rg5+hROithi+je7K38qZ9jKt/To+5avodVxZP1IyBOOO445gnlbmTYPfGfgruECD/p5E0rSChW9Lj3cvmZntuB/R1GzrQlf8QJQ0Be7MLzp1lPxzkz6GXwm1PEk/G+7Rn+Vg+J3ahVOsnXvfyKSiMuo3Vu+fzvQZddO4aG3/hP3k6OfPNANmck8BZct/crejRDj3q+1Q/55aZ2aUPGWetL/Fn/AMb/2Q==";
+<input type="text" id="name" placeholder="Enter name">
+<button onclick="addMember()">Add</button>
 
-const initMembers = [];
+<h3>Members:</h3>
+<ul id="list"></ul>
 
-const fmtDate = d => new Date(d).toLocaleDateString("en-US",{weekday:"short",year:"numeric",month:"short",day:"numeric"});
-const todayStr = () => new Date().toISOString().split("T")[0];
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ── Export ────────────────────────────────────────────────────────────────────
-function doCSV(records, members) {
-  const rows = [["Date","Service","Member Name","Role","Status","Visitor Names"]];
-  records.forEach(r => {
-    const vStr = (r.visitors||[]).map(v=>v.name).join("; ");
-    members.forEach(m => {
-      rows.push([r.date, r.service, m.name, m.role,
-        r.presentIds.includes(m.id)?"Present":"Absent", vStr]);
-    });
-  });
-  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  a.download = "jfcm_attendance.csv"; a.click();
-}
-
-function doXLSX(records, members) {
-  const wb = XLSX.utils.book_new();
-  // Sheet 1 – full detail
-  const d1 = [["Date","Service","Member Name","Role","Status","Visitor Count","Visitor Names"]];
-  records.forEach(r => {
-    const vStr = (r.visitors||[]).map(v=>v.name).join(", ");
-    members.forEach(m => d1.push([r.date,r.service,m.name,m.role,
-      r.presentIds.includes(m.id)?"Present":"Absent",(r.visitors||[]).length,vStr]));
-  });
-  const ws1 = XLSX.utils.aoa_to_sheet(d1);
-  ws1["!cols"]=[{wch:12},{wch:30},{wch:22},{wch:10},{wch:10},{wch:14},{wch:40}];
-  XLSX.utils.book_append_sheet(wb,ws1,"Attendance Detail");
-  // Sheet 2 – summary
-  const d2=[["Date","Service","Members Present","Visitors","Total"]];
-  records.forEach(r=>d2.push([r.date,r.service,r.presentIds.length,(r.visitors||[]).length,r.total]));
-  const ws2=XLSX.utils.aoa_to_sheet(d2);
-  ws2["!cols"]=[{wch:12},{wch:30},{wch:18},{wch:10},{wch:8}];
-  XLSX.utils.book_append_sheet(wb,ws2,"Summary");
-  // Sheet 3 – members
-  const d3=[["Name","Role"]];
-  members.forEach(m=>d3.push([m.name,m.role]));
-  const ws3=XLSX.utils.aoa_to_sheet(d3);
-  ws3["!cols"]=[{wch:25},{wch:12}];
-  XLSX.utils.book_append_sheet(wb,ws3,"Members");
-  XLSX.writeFile(wb,"jfcm_attendance.xlsx");
-}
-
-// ── Colors ────────────────────────────────────────────────────────────────────
-const G = {
-  dark:"#0a160a", mid:"#132013", card:"rgba(18,38,18,0.85)",
-  border:"rgba(80,150,80,0.3)", accent:"#5cb85c", accentLt:"#7dd87d",
-  gold:"#c8a84b", text:"#d8eed8", muted:"#6a8a6a", white:"#edf6ed",
+// 🔴 PUT YOUR FIREBASE CONFIG HERE
+const firebaseConfig = {
+  apiKey: "AIzaSyCGFFgjAVprVRgSnUYkBclL3sMfE7t2vWw",
+  authDomain: "jfcm-ptbo-attendance.firebaseapp.com",
+  projectId: "jfcm-ptbo-attendance",
+  storageBucket: "jfcm-ptbo-attendance.firebasestorage.app",
+  messagingSenderId: "688875506086",
+  appId: "1:688875506086:web:7b5537614223b39f71a767",
+  measurementId: "G-SBJG1TT1RV"
 };
 
-function App() {
-  const [members,    setMembers]    = useState(initMembers);
-  const [records,    setRecords]    = useState([]);
-  const [view,       setView]       = useState("take");
-  const [date,       setDate]       = useState(todayStr());
-  const [service,    setService]    = useState(SERVICES[0]);
-  const [att,        setAtt]        = useState({});
-  const [newM,       setNewM]       = useState({name:"",role:"Member"});
-  const [search,     setSearch]     = useState("");
-  const [saved,      setSaved]      = useState(false);
-  const [visitors,   setVisitors]   = useState([{name:""}]);
-  const [expOpen,    setExpOpen]    = useState(false);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  useEffect(()=>{
-    try{
-      const raw=localStorage.getItem(STORAGE_KEY);
-      if(raw){const{members:m,records:r}=JSON.parse(raw);if(m)setMembers(m);if(r)setRecords(r);}
-    }catch{}
-  },[]);
+// Add member
+window.addMember = async function () {
+  const name = document.getElementById("name").value;
 
-  const persist=(m,r)=>{try{localStorage.setItem(STORAGE_KEY,JSON.stringify({members:m,records:r}));}catch{}};
+  if (name === "") return;
 
-  const toggle=id=>{setAtt(p=>({...p,[id]:!p[id]}));setSaved(false);};
+  await addDoc(collection(db, "members"), {
+    name: name
+  });
 
-  const filtered=members.filter(m=>m.name.toLowerCase().includes(search.toLowerCase()));
+  document.getElementById("name").value = "";
+};
 
-  const saveAtt=()=>{
-    const pIds=Object.entries(att).filter(([,v])=>v).map(([k])=>Number(k));
-    const vList=visitors.filter(v=>v.name.trim());
-    const rec={id:Date.now(),date,service,presentIds:pIds,visitors:vList,total:pIds.length+vList.length};
-    const nr=[rec,...records]; setRecords(nr); persist(members,nr);
-    setSaved(true); setVisitors([{name:""}]); setAtt({});
-  };
+// Real-time display
+onSnapshot(collection(db, "members"), (snapshot) => {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
 
-  const addMember=()=>{
-    if(!newM.name.trim())return;
-    const u=[...members,{id:Date.now(),name:newM.name.trim(),role:newM.role}];
-    setMembers(u);persist(u,records);setNewM({name:"",role:"Member"});
-  };
-
-  const delMember=id=>{
-    if(!confirm("Remove this member?"))return;
-    const u=members.filter(m=>m.id!==id);setMembers(u);persist(u,records);
-  };
-
-  const pCount=Object.values(att).filter(Boolean).length;
-  const vCount=visitors.filter(v=>v.name.trim()).length;
-  const totalSvc=records.length;
-  const avgAtt=totalSvc?Math.round(records.reduce((s,r)=>s+r.total,0)/totalSvc):0;
-  const best=totalSvc?records.reduce((a,b)=>a.total>b.total?a:b):null;
-
-  // ── inline styles ──
-  const card={background:G.card,border:`1px solid ${G.border}`,borderRadius:12,padding:20,marginBottom:16,backdropFilter:"blur(6px)"};
-  const secT={fontSize:12,letterSpacing:3,color:G.accent,textTransform:"uppercase",marginBottom:14,paddingBottom:8,borderBottom:`1px solid rgba(80,150,80,0.2)`};
-  const inp={padding:"10px 14px",background:"rgba(255,255,255,0.05)",border:`1px solid rgba(80,150,80,0.3)`,borderRadius:8,color:G.text,fontSize:13,outline:"none",width:"100%"};
-  const sel={padding:"10px 14px",background:"#0a160a",border:`1px solid rgba(80,150,80,0.3)`,borderRadius:8,color:G.text,fontSize:13,outline:"none",width:"100%"};
-  const mRow=p=>({display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:8,marginBottom:7,
-    background:p?"rgba(92,184,92,0.11)":"rgba(255,255,255,0.03)",
-    border:p?`1px solid rgba(92,184,92,0.45)`:`1px solid rgba(255,255,255,0.05)`,cursor:"pointer"});
-  const chk=c=>({width:22,height:22,borderRadius:5,border:c?`2px solid ${G.accent}`:`2px solid #3a5a3a`,
-    background:c?G.accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0});
-  const badge=role=>{
-    const m={Pastor:["rgba(160,50,50,0.35)","#f08080"],Elder:["rgba(50,90,180,0.35)","#80b0f0"],
-      Deacon:["rgba(160,140,40,0.35)","#d4c060"],Youth:["rgba(140,50,180,0.35)","#c080f0"],
-      Member:["rgba(60,110,60,0.3)","#90c890"]};
-    const[bg,col]=m[role]||m.Member;
-    return{fontSize:10,letterSpacing:1,padding:"2px 8px",borderRadius:10,background:bg,color:col,border:"1px solid currentColor"};
-  };
-  const pBtn={padding:"10px 22px",borderRadius:8,border:"none",
-    background:"linear-gradient(135deg,#3a7a3a,#5cb85c)",color:"#061006",cursor:"pointer",fontSize:13,fontWeight:"bold",letterSpacing:1};
-  const gBtn={padding:"10px 20px",borderRadius:8,border:`1px solid rgba(200,168,75,0.5)`,
-    background:"rgba(200,168,75,0.1)",color:G.gold,cursor:"pointer",fontSize:13,letterSpacing:0.5};
-  const sBtn={padding:"10px 16px",borderRadius:8,border:`1px solid rgba(80,150,80,0.2)`,
-    background:"rgba(255,255,255,0.04)",color:G.text,cursor:"pointer",fontSize:13};
-  const dBtn={padding:"5px 11px",borderRadius:6,border:"1px solid rgba(200,60,60,0.3)",
-    background:"rgba(200,60,60,0.1)",color:"#f08080",cursor:"pointer",fontSize:11};
-  const navBtn=a=>({padding:"8px 16px",borderRadius:6,
-    border:a?`1px solid ${G.accent}`:`1px solid rgba(80,150,80,0.2)`,
-    background:a?"rgba(92,184,92,0.14)":"transparent",
-    color:a?G.accentLt:G.muted,cursor:"pointer",fontSize:13,letterSpacing:0.8,transition:"all 0.18s"});
-
-  return (
-    <div style={{minHeight:"100vh",background:`linear-gradient(155deg,${G.dark} 0%,${G.mid} 55%,#0a1a0a 100%)`}}
-         onClick={()=>expOpen&&setExpOpen(false)}>
-
-      {/* ── HEADER ── */}
-      <div style={{background:"rgba(0,0,0,0.4)",borderBottom:`1px solid ${G.border}`,padding:"0 20px",display:"flex",alignItems:"center",gap:14,height:72}}>
-        <div style={{width:54,height:54,borderRadius:"50%",border:`2px solid ${G.accent}`,overflow:"hidden",flexShrink:0,boxShadow:`0 0 16px rgba(92,184,92,0.4)`}}>
-          <img src={`data:image/jpeg;base64,${LOGO}`} alt="JFCM" style={{width:"100%",height:"100%",objectFit:"cover"}} />
-        </div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:18,fontWeight:"bold",color:G.accentLt,letterSpacing:1}}>Jesus First Christian Ministry</div>
-          <div style={{fontSize:11,color:G.muted,letterSpacing:2.5,marginTop:2}}>PETERBOROUGH · ATTENDANCE SYSTEM</div>
-        </div>
-        {/* Export dropdown */}
-        <div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
-          <button style={gBtn} onClick={()=>setExpOpen(p=>!p)}>⬇ Export ▾</button>
-          {expOpen&&(
-            <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:"#0c1c0c",
-              border:`1px solid ${G.border}`,borderRadius:8,overflow:"hidden",minWidth:180,zIndex:300,
-              boxShadow:"0 10px 30px rgba(0,0,0,0.6)"}}>
-              <button onClick={()=>{doCSV(records,members);setExpOpen(false);}}
-                style={{display:"block",width:"100%",padding:"12px 18px",background:"transparent",
-                  border:"none",color:G.text,textAlign:"left",cursor:"pointer",fontSize:13,
-                  borderBottom:`1px solid ${G.border}`}}>📄 Export as CSV</button>
-              <button onClick={()=>{doXLSX(records,members);setExpOpen(false);}}
-                style={{display:"block",width:"100%",padding:"12px 18px",background:"transparent",
-                  border:"none",color:G.text,textAlign:"left",cursor:"pointer",fontSize:13}}>📊 Export as Excel (.xlsx)</button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── NAV ── */}
-      <nav style={{display:"flex",gap:4,padding:"10px 20px",background:"rgba(0,0,0,0.22)",
-        borderBottom:`1px solid rgba(80,150,80,0.12)`,flexWrap:"wrap"}}>
-        {[["take","✝ Attendance"],["history","📋 History"],["members","👥 Members"],["stats","📊 Statistics"]].map(([v,l])=>(
-          <button key={v} style={navBtn(view===v)} onClick={()=>setView(v)}>{l}</button>
-        ))}
-      </nav>
-
-      <div style={{padding:"20px 20px 80px",maxWidth:820,margin:"0 auto"}}>
-
-        {/* ── TAKE ATTENDANCE ── */}
-        {view==="take"&&<div className="fade-in">
-          <div style={card}>
-            <div style={secT}>Service Details</div>
-            <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-              <div style={{flex:1,minWidth:150}}>
-                <label style={{fontSize:11,color:G.muted,letterSpacing:2,display:"block",marginBottom:4}}>DATE</label>
-                <input type="date" value={date} onChange={e=>{setDate(e.target.value);setSaved(false);}} style={{...inp,colorScheme:"dark"}} />
-              </div>
-              <div style={{flex:2,minWidth:200}}>
-                <label style={{fontSize:11,color:G.muted,letterSpacing:2,display:"block",marginBottom:4}}>SERVICE TYPE</label>
-                <select value={service} onChange={e=>{setService(e.target.value);setSaved(false);}} style={sel}>
-                  {SERVICES.map(s=><option key={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div style={card}>
-            <div style={secT}>Members — {pCount} of {members.length} Present</div>
-            <input placeholder="🔍 Search members..." value={search} onChange={e=>setSearch(e.target.value)} style={{...inp,marginBottom:12}} />
-            {filtered.length===0&&<p style={{color:G.muted,textAlign:"center",padding:20}}>No members found.</p>}
-            {filtered.map(m=>(
-              <div key={m.id} style={mRow(!!att[m.id])} onClick={()=>toggle(m.id)}>
-                <div style={chk(!!att[m.id])}>
-                  {att[m.id]&&<span style={{color:"#061006",fontSize:13,fontWeight:"bold"}}>✓</span>}
-                </div>
-                <span style={{flex:1,fontSize:14,color:G.text}}>{m.name}</span>
-                <span style={badge(m.role)}>{m.role}</span>
-              </div>
-            ))}
-          </div>
-
-          <div style={card}>
-            <div style={secT}>Visitors — {vCount} recorded</div>
-            {visitors.map((v,i)=>(
-              <div key={i} style={{display:"flex",gap:8,marginBottom:8}}>
-                <input placeholder={`Visitor ${i+1} full name`} value={v.name}
-                  onChange={e=>{const u=[...visitors];u[i]={name:e.target.value};setVisitors(u);setSaved(false);}}
-                  style={inp} />
-                {visitors.length>1&&<button onClick={()=>setVisitors(visitors.filter((_,j)=>j!==i))} style={{...dBtn,padding:"8px 12px"}}>✕</button>}
-              </div>
-            ))}
-            <button style={{...sBtn,marginTop:4}} onClick={()=>setVisitors([...visitors,{name:""}])}>+ Add Visitor</button>
-          </div>
-
-          <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-            <button style={pBtn} onClick={saveAtt}>Save Attendance Record</button>
-            {saved&&<span style={{color:G.accentLt,fontSize:13,letterSpacing:1}}>✓ Saved!</span>}
-          </div>
-
-          <div className="pulse" style={{position:"fixed",bottom:24,right:24,background:"linear-gradient(135deg,#3a7a3a,#5cb85c)",
-            color:"#061006",borderRadius:"50%",width:62,height:62,display:"flex",flexDirection:"column",
-            alignItems:"center",justifyContent:"center",fontWeight:"bold",boxShadow:"0 4px 20px rgba(92,184,92,0.5)",
-            fontSize:20,lineHeight:1.1,zIndex:99}}>
-            <span>{pCount+vCount}</span>
-            <span style={{fontSize:9,letterSpacing:1}}>HERE</span>
-          </div>
-        </div>}
-
-        {/* ── HISTORY ── */}
-        {view==="history"&&<div className="fade-in">
-          <div style={card}>
-            <div style={secT}>Attendance Records ({records.length} services)</div>
-            {records.length===0&&<p style={{color:G.muted,textAlign:"center",padding:40}}>No records yet — start taking attendance.</p>}
-            {records.map(r=>{
-              const pm=members.filter(m=>r.presentIds.includes(m.id));
-              const ab=members.filter(m=>!r.presentIds.includes(m.id));
-              return(
-                <div key={r.id} style={{...card,marginBottom:10,padding:"14px 18px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
-                    <div>
-                      <div style={{fontSize:15,color:G.accentLt,fontWeight:"bold"}}>{r.service}</div>
-                      <div style={{fontSize:12,color:G.muted,marginTop:3}}>{fmtDate(r.date)}</div>
-                    </div>
-                    <div style={{textAlign:"right"}}>
-                      <span style={{fontSize:28,fontWeight:"bold",color:G.accent}}>{r.total}</span>
-                      <div style={{fontSize:10,color:G.muted,letterSpacing:1}}>TOTAL</div>
-                    </div>
-                  </div>
-                  <div style={{marginTop:10,fontSize:12,color:G.muted}}>
-                    <span style={{color:G.accentLt}}>Present ({r.presentIds.length}):</span>{" "}
-                    {pm.map(m=>m.name).join(", ")||"None"}
-                  </div>
-                  {ab.length>0&&<div style={{marginTop:5,fontSize:12,color:G.muted}}>
-                    <span style={{color:"#f08080"}}>Absent ({ab.length}):</span>{" "}
-                    {ab.map(m=>m.name).join(", ")}
-                  </div>}
-                  {(r.visitors||[]).length>0&&<div style={{marginTop:5,fontSize:12,color:G.muted}}>
-                    <span style={{color:G.gold}}>Visitors ({r.visitors.length}):</span>{" "}
-                    {r.visitors.map(v=>v.name).join(", ")}
-                  </div>}
-                </div>
-              );
-            })}
-          </div>
-        </div>}
-
-        {/* ── MEMBERS ── */}
-        {view==="members"&&<div className="fade-in">
-          <div style={card}>
-            <div style={secT}>Add New Member</div>
-            <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"flex-end"}}>
-              <div style={{flex:2,minWidth:160}}>
-                <label style={{fontSize:11,color:G.muted,letterSpacing:2,display:"block",marginBottom:4}}>FULL NAME</label>
-                <input placeholder="Enter full name" value={newM.name}
-                  onChange={e=>setNewM({...newM,name:e.target.value})}
-                  onKeyDown={e=>e.key==="Enter"&&addMember()} style={inp} />
-              </div>
-              <div style={{flex:1,minWidth:130}}>
-                <label style={{fontSize:11,color:G.muted,letterSpacing:2,display:"block",marginBottom:4}}>ROLE</label>
-                <select value={newM.role} onChange={e=>setNewM({...newM,role:e.target.value})} style={sel}>
-                  {ROLES.map(r=><option key={r}>{r}</option>)}
-                </select>
-              </div>
-              <button style={{...pBtn,marginBottom:1}} onClick={addMember}>Add Member</button>
-            </div>
-          </div>
-          <div style={card}>
-            <div style={secT}>Registered Members ({members.length})</div>
-            <input placeholder="🔍 Search..." value={search} onChange={e=>setSearch(e.target.value)} style={{...inp,marginBottom:12}} />
-            {members.filter(m=>m.name.toLowerCase().includes(search.toLowerCase())).map(m=>(
-              <div key={m.id} style={{...mRow(false),cursor:"default"}}>
-                <span style={{flex:1,fontSize:14,color:G.text}}>{m.name}</span>
-                <span style={badge(m.role)}>{m.role}</span>
-                <button onClick={()=>delMember(m.id)} style={dBtn}>Remove</button>
-              </div>
-            ))}
-          </div>
-        </div>}
-
-        {/* ── STATS ── */}
-        {view==="stats"&&<div className="fade-in">
-          <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
-            {[{l:"Total Services",v:totalSvc},{l:"Avg. Attendance",v:avgAtt},{l:"Members",v:members.length}].map(s=>(
-              <div key={s.l} style={{flex:1,minWidth:130,background:"rgba(92,184,92,0.07)",
-                border:`1px solid rgba(92,184,92,0.25)`,borderRadius:10,padding:"16px 20px",textAlign:"center"}}>
-                <div style={{fontSize:34,fontWeight:"bold",color:G.accent}}>{s.v}</div>
-                <div style={{fontSize:10,letterSpacing:2,color:G.muted,marginTop:4}}>{s.l.toUpperCase()}</div>
-              </div>
-            ))}
-          </div>
-
-          {best&&<div style={card}>
-            <div style={secT}>Best Attended Service</div>
-            <div style={{color:G.accentLt,fontSize:18,marginBottom:4}}>{best.service}</div>
-            <div style={{color:G.muted,fontSize:13}}>{fmtDate(best.date)} &middot; {best.total} in attendance</div>
-          </div>}
-
-          <div style={card}>
-            <div style={secT}>Breakdown by Service Type</div>
-            {SERVICES.map(s=>{
-              const f=records.filter(r=>r.service===s);
-              const avg=f.length?Math.round(f.reduce((a,r)=>a+r.total,0)/f.length):0;
-              const mx=f.reduce((a,r)=>Math.max(a,r.total),0);
-              return(
-                <div key={s} style={{marginBottom:14}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                    <span style={{fontSize:13,color:G.text}}>{s}</span>
-                    <span style={{fontSize:11,color:G.muted}}>{f.length} services · avg {avg}</span>
-                  </div>
-                  <div style={{height:7,background:"rgba(255,255,255,0.05)",borderRadius:4,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${mx?(avg/mx)*100:0}%`,
-                      background:"linear-gradient(90deg,#3a7a3a,#5cb85c)",borderRadius:4,transition:"width 0.6s"}} />
-                  </div>
-                </div>
-              );
-            })}
-            {totalSvc===0&&<p style={{color:G.muted,textAlign:"center",padding:30}}>No data yet.</p>}
-          </div>
-
-          {totalSvc>0&&<div style={card}>
-            <div style={secT}>Export Records</div>
-            <p style={{color:G.muted,fontSize:13,marginBottom:14}}>Download all records for your church files or reporting.</p>
-            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-              <button style={gBtn} onClick={()=>doCSV(records,members)}>📄 Download CSV</button>
-              <button style={gBtn} onClick={()=>doXLSX(records,members)}>📊 Download Excel (.xlsx)</button>
-            </div>
-          </div>}
-        </div>}
-
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  snapshot.forEach((doc) => {
+    let li = document.createElement("li");
+    li.textContent = doc.data().name;
+    list.appendChild(li);
+  });
+});
 </script>
+
 </body>
 </html>
